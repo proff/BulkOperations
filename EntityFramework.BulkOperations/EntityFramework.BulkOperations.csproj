@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net461</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="EntityFramework" Version="6.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Transactions">
+      <HintPath>..\..\..\Windows\Microsoft.NET\Framework\v4.0.30319\System.Transactions.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>
