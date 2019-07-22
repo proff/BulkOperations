@@ -21,11 +21,13 @@ namespace EntityFramework.BulkOperations
     {
         private static ConcurrentDictionary<Type, EfMapping> _mappingCache = new ConcurrentDictionary<Type, EfMapping>();
 
-        public static int BatchSaveChanges(this DbContext dbContext)
+        public static int BulkSaveChanges(this DbContext dbContext)
         {
             var connection = dbContext.Database.Connection;
             if (!(connection.CreateCommand() is SqlCommand))
                 return dbContext.SaveChanges();
+
+            SqlTransaction tran = (SqlTransaction)dbContext.Database.CurrentTransaction?.UnderlyingTransaction;
 
             /*if (Transaction.Current == null)
             {
@@ -34,16 +36,18 @@ namespace EntityFramework.BulkOperations
 
             var mapping = _mappingCache.GetOrAdd(dbContext.GetType(), key => new EfMapping(dbContext));
 
-            var context = ((IObjectContextAdapter) dbContext).ObjectContext;
+            var context = ((IObjectContextAdapter)dbContext).ObjectContext;
+            context.DetectChanges();
             var q = from e in context.ObjectStateManager.GetObjectStateEntries(EntityState.Modified)
-                group e by ObjectContext.GetObjectType(e.Entity.GetType())
+                    group e by ObjectContext.GetObjectType(e.Entity.GetType())
                 into g
-                let first = g.First()
-                select new
-                {
-                    Type = g.Key, first.EntityKey,
-                    Items = g.AsEnumerable()
-                };
+                    let first = g.First()
+                    select new
+                    {
+                        Type = g.Key,
+                        first.EntityKey,
+                        Items = g.AsEnumerable()
+                    };
             int result = 0;
             var connectionClosed = connection.State != ConnectionState.Open;
             if (connectionClosed)
@@ -56,12 +60,12 @@ namespace EntityFramework.BulkOperations
                 BitArray changed = null;
                 foreach (var item in type.Items)
                 {
-                    var c = (BitArray) p.GetValue(item);
+                    var c = (BitArray)p.GetValue(item);
                     if (changed == null)
-                        changed = (BitArray) c.Clone();
+                        changed = (BitArray)c.Clone();
                     else
                     {
-                        changed.And(c);
+                        changed = changed.Or(c);
                     }
                 }
 
@@ -80,11 +84,16 @@ namespace EntityFramework.BulkOperations
                 var random = Guid.NewGuid().ToString().Replace("-", "_");
                 var tempTableName = $"#BatchSaveChanges{random}";
 
-                var cmd = (SqlCommand) connection.CreateCommand();
+                var cmd = (SqlCommand)connection.CreateCommand();
                 var dt = new DataTable();
                 dt.Columns.Add(keyName, tableMapping.PropertyMappings[keyName].PropertyType);
                 foreach (var name in names)
-                    dt.Columns.Add(name, tableMapping.PropertyMappings[name].PropertyType);
+                {
+                    var t1 = tableMapping.PropertyMappings[name].PropertyType;
+                    var t2 = Nullable.GetUnderlyingType(t1);
+                    dt.Columns.Add(name, t2 ?? t1);
+                }
+
                 var sb = new StringBuilder();
                 sb.Append(
                     $"CREATE TABLE {tempTableName} ({keyName} {MapType(tableMapping.PropertyMappings[keyName].PropertyType)}");
@@ -95,9 +104,10 @@ namespace EntityFramework.BulkOperations
 
                 sb.AppendLine($");");
                 cmd.CommandText = sb.ToString();
+                cmd.Transaction = tran;
                 cmd.ExecuteNonQuery();
 
-                cmd = (SqlCommand) connection.CreateCommand();
+                cmd = (SqlCommand)connection.CreateCommand();
                 sb.Clear();
                 sb.Append($"MERGE {tableName} AS target USING (SELECT {keyName}");
                 foreach (var name in names)
@@ -114,8 +124,10 @@ namespace EntityFramework.BulkOperations
                 sb.Append($") ON (target.{keyName}=source.{keyName}) WHEN MATCHED THEN UPDATE SET ");
                 foreach (var name in names)
                 {
-                    sb.Append($"{name}=source.{name}");
+                    sb.Append($"{name}=source.{name}, ");
                 }
+
+                sb.Length -= 2;
 
                 sb.AppendLine(";");
                 foreach (var entry in type.Items)
@@ -130,7 +142,7 @@ namespace EntityFramework.BulkOperations
                     dt.Rows.Add(row);
                 }
 
-                var copy = new SqlBulkCopy((SqlConnection)connection);
+                var copy = new SqlBulkCopy((SqlConnection)connection, SqlBulkCopyOptions.Default, tran);
                 copy.DestinationTableName = $"{tempTableName}";
                 copy.WriteToServer(dt);
                 copy.Close();
@@ -139,6 +151,7 @@ namespace EntityFramework.BulkOperations
                 /*var param = cmd.Parameters.Add("@table", SqlDbType.Structured);
                 param.Value = dt;
                 param.TypeName = $"{tableMapping.SchemaName}.BatchSaveChanges{random}";*/
+                cmd.Transaction = tran;
                 result += cmd.ExecuteNonQuery();
             }
 
@@ -223,17 +236,21 @@ namespace EntityFramework.BulkOperations
             // Loop thru each entity type in the model
             foreach (var set in conceptualContainer.BaseEntitySets.OfType<EntitySet>())
             {
-                var typeMapping = new TypeMapping
-                {
-                    TableMappings = new List<TableMapping>()
-                };
-                this.TypeMappings.Add(typeMapping);
-
                 // Get the CLR type of the entity
-                typeMapping.EntityType = metadata
+                var type = metadata
                     .GetItems<EntityType>(DataSpace.OSpace)
                     .Select(e => objectItemCollection.GetClrType(e))
-                    .Single(e => e.FullName == set.ElementType.FullName);
+                    .SingleOrDefault(e => e.FullName == set.ElementType.FullName);
+
+                if (type == null)
+                    continue;
+
+                var typeMapping = new TypeMapping
+                {
+                    TableMappings = new List<TableMapping>(),
+                    EntityType = type
+                };
+                this.TypeMappings.Add(typeMapping);
 
                 // Get the mapping fragments for this type
                 // (types may have mutliple fragments if 'Entity Splitting' is used)
@@ -279,7 +296,7 @@ namespace EntityFramework.BulkOperations
 
                         var propertyInfo = typeMapping.EntityType.GetProperty(propertyName);
                         tableMapping.PropertyMappings.Add(columnName, propertyInfo);
-                        tableMapping.PropertyMappingsList.Add(new PropertyMapping{ColumnName = columnName, Property  = propertyInfo});
+                        tableMapping.PropertyMappingsList.Add(new PropertyMapping { ColumnName = columnName, Property = propertyInfo });
                     }
                 }
             }

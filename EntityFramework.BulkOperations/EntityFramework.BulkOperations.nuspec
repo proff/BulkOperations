@@ -13,7 +13,6 @@
     </dependencies>
   </metadata>
   <files>
-    <file src="Readme.txt" target="Readme.txt" />
-    <file src="bin\release\net461\EntityFramework.BulkOperations.dll" target="Lib"/>
+    <file src="bin\release\net45\EntityFramework.BulkOperations.dll" target="Lib/net45"/>
   </files>
 </package>
