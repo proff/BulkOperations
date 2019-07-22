@@ -1,0 +1,20 @@
+using System.Data.Entity.ModelConfiguration;
+
+namespace BulkOperations.EntityFramework.Tests.Models.Mapping
+{
+    public class BusinessEntityMap : EntityTypeConfiguration<BusinessEntity>
+    {
+        public BusinessEntityMap()
+        {
+            // Primary Key
+            this.HasKey(t => t.BusinessEntityID);
+
+            // Properties
+            // Table & Column Mappings
+            this.ToTable("BusinessEntity", "Person");
+            this.Property(t => t.BusinessEntityID).HasColumnName("BusinessEntityID");
+            this.Property(t => t.rowguid).HasColumnName("rowguid");
+            this.Property(t => t.ModifiedDate).HasColumnName("ModifiedDate");
+        }
+    }
+}
