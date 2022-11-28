@@ -2,12 +2,12 @@
 using System.Linq;
 using System.Transactions;
 using BenchmarkDotNet.Attributes;
-using BulkOperations.EntityFramework.Tests.Models;
+using BulkOperations.EntityFramework.Tests.Model;
 
 namespace BulkOperations.EntityFramework.PerformanceTests
 {
     [RyuJitX64Job]
-    [MemoryDiagnoser]
+    //[MemoryDiagnoser]
     public class Test
     {
         [Params(1, 10, 100, 1000, 10000)] public int Count;
@@ -18,23 +18,23 @@ namespace BulkOperations.EntityFramework.PerformanceTests
         public void Setup()
         {
             _db = new AdventureWorksContext();
-            foreach (var header in _db.SalesOrderHeaders.Take(Count))
+            foreach (var header in _db.Sales_SalesOrderHeaders.Take(Count))
             {
                 header.Comment = Guid.NewGuid().ToString();
             }
 
             _tran = new TransactionScope(TransactionScopeOption.Required,
-                new TransactionOptions() {IsolationLevel = IsolationLevel.ReadCommitted});
+                new TransactionOptions {IsolationLevel = IsolationLevel.ReadCommitted});
         }
 
-        /*[Benchmark]
+        [Benchmark]
         public void SaveChanges()
         {
             _db.SaveChanges();
             _db.Dispose();
             _tran.Complete();
             _tran.Dispose();
-        }*/
+        }
 
         [Benchmark]
         public void BatchSaveChanges()

@@ -1,17 +1,10 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net45</TargetFramework>
+    <TargetFrameworks>net45;netstandard21</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="EntityFramework" Version="6.2.0" />
+    <PackageReference Include="EntityFramework" Version="6.3.0" />
   </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="System.Transactions">
-      <HintPath>..\..\..\Windows\Microsoft.NET\Framework\v4.0.30319\System.Transactions.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-
 </Project>

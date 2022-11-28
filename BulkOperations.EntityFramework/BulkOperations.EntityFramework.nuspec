@@ -1,18 +1,20 @@
-<?xml version="1.0"?>
-<package>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
   <metadata>
-    <id>EntityFramework.BulkOperations</id>
-    <version>0.1</version>
+    <id>BulkOperations.EntityFramework</id>
+    <version>0.1.7</version>
     <title>Bulk operations extension for EntityFramework</title>
-    <authors>Alexander Ovchinnikov</authors>
-    <owners>Alexander Ovchinnikov</owners>
+    <authors>Aleksandr Ovchinnikov</authors>
+    <owners>Aleksandr Ovchinnikov</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
     <description>Adds support for bulk SaveChanges</description>
     <dependencies>
-      <dependency id="EntityFramework" version="6.2.0" />
+      <dependency id="EntityFramework" version="6.3.0" />
     </dependencies>
   </metadata>
   <files>
-    <file src="bin\release\net45\BulkOperations.EntityFramework.dll" target="Lib/net45"/>
+    <file src="bin\release\net45\BulkOperations.EntityFramework.dll" target="Lib\net45\BulkOperations.EntityFramework.dll" />
+    <file src="bin\release\netstandard21\BulkOperations.EntityFramework.dll" target="Lib\netstandard21\BulkOperations.EntityFramework.dll" />
   </files>
 </package>
