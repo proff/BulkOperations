@@ -19,11 +19,28 @@ namespace BulkOperations.EntityFramework.Tests
         [OneTimeSetUp]
         public async Task Setup()
         {
-            var consumer = Consume.RedirectStdoutAndStderrToStream(new MemoryStream(), new MemoryStream());
+            var mssqlConfiguration = new MsSqlTestcontainerConfiguration();
+            mssqlConfiguration.Password = "Yf7(nk,&vT`|Zkiw";
+            mssqlConfiguration.Database = "test";
+            mssqlConfiguration.Port = 15826;
+
+            var mssqlContainer = new TestcontainersBuilder<MsSqlTestcontainer>()
+                .WithDatabase(mssqlConfiguration)
+                .Build();
+            
+            /*var consumer = Consume.RedirectStdoutAndStderrToStream(new MemoryStream(), new MemoryStream());
             var a = new TestcontainersBuilder<TestcontainersContainer>().WithName(Guid.NewGuid().ToString("D"))
                 .WithImage("chriseaton/adventureworks").WithEnvironment("ACCEPT_EULA", "Y")
-                .WithEnvironment("SA_PASSWORD", "Yf7(nk,&vT`|Zkiw").WithPortBinding(15826, 1433).WithOutputConsumer(consumer).WithWaitStrategy(Wait.ForUnixContainer().UntilMessageIsLogged(consumer.Stdout, "Server is ready.")).Build();
-            await a.StartAsync();
+                .WithEnvironment("SA_PASSWORD", "Yf7(nk,&vT`|Zkiw").WithPortBinding(15826, 1433).WithOutputConsumer(consumer).WithWaitStrategy(Wait.ForUnixContainer().UntilMessageIsLogged(consumer.Stdout, "Server is ready.")).Build();*/
+            await mssqlContainer.StartAsync();
+            var db = new TestDbContext();
+            db.Database.CreateIfNotExists();
+            for (int i = 0; i < 1000; i++)
+            {
+                db.TestEntityIdentityInts.Add(new TestEntityIdentityInt() { Name = Guid.NewGuid().ToString() });
+            }
+
+            await db.SaveChangesAsync();
         }
 
         [Test]
@@ -31,25 +48,25 @@ namespace BulkOperations.EntityFramework.Tests
         {
             const int count = 50;
             var newValues = new List<string>();
-            using (var context = new AdventureWorksContext())
+            using (var context = new TestDbContext())
             {
-                var list = context.Sales_SalesOrderHeaders.OrderBy(a => a.SalesOrderId).Take(count);
+                var list = context.TestEntityIdentityInts.OrderBy(a => a.Id).Take(count);
                 foreach (var entity in list)
                 {
                     var value = Guid.NewGuid().ToString();
-                    entity.Comment = value;
+                    entity.Name = value;
                     newValues.Add(value);
                 }
 
                 await context.BulkSaveChangesAsync();
             }
 
-            using (var context = new AdventureWorksContext())
+            using (var context = new TestDbContext())
             {
-                var list = context.Sales_SalesOrderHeaders.OrderBy(a => a.SalesOrderId).Take(count).ToList();
+                var list = context.TestEntityIdentityInts.OrderBy(a => a.Id).Take(count).ToList();
                 for (var i = 0; i < list.Count; i++)
                 {
-                    Assert.That(list[i].Comment, Is.EqualTo(newValues[i]));
+                    Assert.That(list[i].Name, Is.EqualTo(newValues[i]));
                 }
             }
         }
@@ -59,25 +76,25 @@ namespace BulkOperations.EntityFramework.Tests
         {
             const int count = 50;
             var newValues = new List<string>();
-            using (var context = new ExternalAdventureWorksContext())
+            using (var context = new TestExternalDbContext())
             {
-                var list = context.Sales_SalesOrderHeaders.OrderBy(a=>a.SalesOrderId).Take(count);
+                var list = context.TestEntityIdentityInts.OrderBy(a=>a.Id).Take(count);
                 foreach (var entity in list)
                 {
                     var value = Guid.NewGuid().ToString();
-                    entity.Comment = value;
+                    entity.Name = value;
                     newValues.Add(value);
                 }
 
                 await context.BulkSaveChangesAsync();
             }
 
-            using (var context = new AdventureWorksContext())
+            using (var context = new TestDbContext())
             {
-                var list = context.Sales_SalesOrderHeaders.OrderBy(a => a.SalesOrderId).Take(count).ToList();
+                var list = context.TestEntityIdentityInts.OrderBy(a => a.Id).Take(count).ToList();
                 for (var i = 0; i < list.Count; i++)
                 {
-                    Assert.That(list[i].Comment, Is.EqualTo(newValues[i]));
+                    Assert.That(list[i].Name, Is.EqualTo(newValues[i]));
                 }
             }
         }
@@ -87,9 +104,9 @@ namespace BulkOperations.EntityFramework.Tests
         {
             const int count = 50;
             var newValues = new List<string>();
-            using (var context = new AdventureWorksContext())
+            using (var context = new TestDbContext())
             {
-                var list = context.Sales_Currencies.OrderBy(a => a.CurrencyCode).Take(count);
+                var list = context.TestEntityIdentityInts.OrderBy(a => a.Id).Take(count);
                 foreach (var entity in list)
                 {
                     var value = Guid.NewGuid().ToString();
@@ -97,23 +114,16 @@ namespace BulkOperations.EntityFramework.Tests
                     newValues.Add(value);
                 }
 
-                await context.BulkUpsertAsync(new Sales_Currency[]{new Sales_Currency(){CurrencyCode = "ZZZ", Name = "ZZZ"}});
+                await context.BulkUpsertAsync(new TestEntityIdentityInt[]{new TestEntityIdentityInt(){Id = 1000000, Name = "ZZZ"}});
             }
 
-            using (var context = new AdventureWorksContext())
+            using (var context = new TestDbContext())
             {
-                var list = context.Sales_Currencies.OrderBy(a => a.CurrencyCode).Take(count).ToList();
+                var list = context.TestEntityIdentityInts.OrderBy(a => a.Id).Take(count).ToList();
                 for (var i = 0; i < list.Count; i++)
                 {
                     Assert.That(list[i].Name, Is.EqualTo(newValues[i]));
                 }
-            }
-        }
-
-        class Test : TestcontainersContainer
-        {
-            public Test(ITestcontainersConfiguration configuration, ILogger logger) : base(configuration, logger)
-            {
             }
         }
     }

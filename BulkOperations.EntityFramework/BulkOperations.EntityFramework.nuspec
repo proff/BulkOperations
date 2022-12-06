@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
   <metadata>
     <id>BulkOperations.EntityFramework</id>
-    <version>0.1.7</version>
+    <version>0.1.9</version>
     <title>Bulk operations extension for EntityFramework</title>
     <authors>Aleksandr Ovchinnikov</authors>
     <owners>Aleksandr Ovchinnikov</owners>
@@ -15,6 +15,8 @@
   </metadata>
   <files>
     <file src="bin\release\net45\BulkOperations.EntityFramework.dll" target="Lib\net45\BulkOperations.EntityFramework.dll" />
+    <file src="bin\release\net45\BulkOperations.EntityFramework.pdb" target="Lib\net45\BulkOperations.EntityFramework.pdb" />
     <file src="bin\release\netstandard21\BulkOperations.EntityFramework.dll" target="Lib\netstandard21\BulkOperations.EntityFramework.dll" />
+    <file src="bin\release\netstandard21\BulkOperations.EntityFramework.pdb" target="Lib\netstandard21\BulkOperations.EntityFramework.pdb" />
   </files>
 </package>

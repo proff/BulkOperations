@@ -77,7 +77,7 @@ namespace BulkOperations.EntityFramework
                     }
                 }
 
-                var tableMapping = mapping.TypeMappings.Single(a => a.EntityType == type.Type).TableMappings
+                var tableMapping = mapping.TypeMappings.Single(a => a.EntityType.FullName == type.Type.FullName).TableMappings
                     .Single();
                 var keyNames = type.EntityKey.EntityKeyValues
                     .Select(a => tableMapping.PropertyMappingsList.Single(b => b.Property.Name == a.Key).ColumnName).ToList();
@@ -146,7 +146,7 @@ namespace BulkOperations.EntityFramework
             if (entities.Count == 0) return 0;
 
             var mapping = _mappingCache.GetOrAdd(dbContext.GetType(), key => new EfMapping(dbContext));
-            var tableMapping = mapping.TypeMappings.Single(a => a.EntityType == typeof(T)).TableMappings
+            var tableMapping = mapping.TypeMappings.Single(a => a.EntityType.FullName == typeof(T).FullName).TableMappings
                 .Single();
             var context = ((IObjectContextAdapter)dbContext).ObjectContext;
             var set = context.CreateObjectSet<T>();
