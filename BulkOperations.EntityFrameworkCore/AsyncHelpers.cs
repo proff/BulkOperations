@@ -5,12 +5,15 @@ using System.Threading.Tasks;
 
 namespace BulkOperations.EntityFramework
 {
+    /// <summary>
+    /// Helper class to run asynchronous tasks synchronously.
+    /// </summary>
     public static class AsyncHelpers
     {
         /// <summary>
-        /// Execute's an async Task&lt;T> method which has a void return value synchronously
+        /// Executes an async Task method synchronously.
         /// </summary>
-        /// <param name="task">Task&lt;T> method to execute</param>
+        /// <param name="task">The Task method to execute.</param>
         public static void RunSync(Func<Task> task)
         {
             var oldContext = SynchronizationContext.Current;
@@ -38,11 +41,11 @@ namespace BulkOperations.EntityFramework
         }
 
         /// <summary>
-        /// Execute's an async Task&lt;T> method which has a T return type synchronously
+        /// Executes an async Task&lt;T&gt; method synchronously and returns the result.
         /// </summary>
-        /// <typeparam name="T">Return Type</typeparam>
-        /// <param name="task">Task&lt;T> method to execute</param>
-        /// <returns></returns>
+        /// <typeparam name="T">The return type of the task.</typeparam>
+        /// <param name="task">The Task&lt;T&gt; method to execute.</param>
+        /// <returns>The result of the asynchronous task.</returns>
         public static T RunSync<T>(Func<Task<T>> task)
         {
             var oldContext = SynchronizationContext.Current;

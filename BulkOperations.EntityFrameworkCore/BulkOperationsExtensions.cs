@@ -23,19 +23,37 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace BulkOperations.EntityFrameworkCore
 {
+    /// <summary>
+    /// Extension methods for <see cref="DbContext"/> to perform bulk operations in EF Core.
+    /// </summary>
     public static class BulkOperationsExtensions
     {
+        /// <summary>
+        /// Saves all changes made in this context to the underlying database using high-performance bulk update.
+        /// </summary>
+        /// <param name="dbContext">The database context.</param>
+        /// <returns>The number of state entries written to the underlying database.</returns>
         public static int BulkSaveChanges(this DbContext dbContext)
         {
             return AsyncHelpers.RunSync(() => BulkSaveChangesAsync(dbContext));
         }
 
+        /// <summary>
+        /// Checks if the current context is using a relational database provider.
+        /// </summary>
+        /// <param name="dbContext">The database context.</param>
+        /// <returns>True if the provider is relational; otherwise, false.</returns>
         public static bool IsRelational(DbContext dbContext)
         {
             return ((IDatabaseFacadeDependenciesAccessor)dbContext.Database)
                 .Context.GetService<IDbContextOptions>().Extensions.OfType<RelationalOptionsExtension>().Any();
         }
 
+        /// <summary>
+        /// Asynchronously saves all changes made in this context to the underlying database using high-performance bulk update.
+        /// </summary>
+        /// <param name="dbContext">The database context.</param>
+        /// <returns>A task that represents the asynchronous save operation. The task result contains the number of state entries written to the underlying database.</returns>
         public static async Task<int> BulkSaveChangesAsync(this DbContext dbContext)
         {
             if (!IsRelational(dbContext))
@@ -126,22 +144,54 @@ namespace BulkOperations.EntityFrameworkCore
             return type;
         }
 
+        /// <summary>
+        /// Performs a bulk insert or update operation on the specified collection of entities in EF Core.
+        /// </summary>
+        /// <typeparam name="T">The type of the entities.</typeparam>
+        /// <param name="dbContext">The database context.</param>
+        /// <param name="entities">The collection of entities to upsert.</param>
+        /// <returns>The number of state entries affected in the underlying database.</returns>
         public static int BulkUpsert<T>(this DbContext dbContext, ICollection<T> entities) where T : class
         {
             return AsyncHelpers.RunSync(() => BulkUpsertAsync(dbContext, entities));
         }
 
+        /// <summary>
+        /// Asynchronously performs a bulk insert or update operation on the specified collection of entities in EF Core.
+        /// </summary>
+        /// <typeparam name="T">The type of the entities.</typeparam>
+        /// <param name="dbContext">The database context.</param>
+        /// <param name="entities">The collection of entities to upsert.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the number of state entries affected in the underlying database.</returns>
         public static Task<int> BulkUpsertAsync<T>(this DbContext dbContext, ICollection<T> entities) where T : class
         {
             return BulkUpsertAsync<T, T>(dbContext, entities, null);
         }
 
+        /// <summary>
+        /// Performs a bulk insert or update operation on the specified collection of entities in EF Core, using the specified fields for matching and updating.
+        /// </summary>
+        /// <typeparam name="T">The type of the entities.</typeparam>
+        /// <typeparam name="T1">The type of the fields expression result.</typeparam>
+        /// <param name="dbContext">The database context.</param>
+        /// <param name="entities">The collection of entities to upsert.</param>
+        /// <param name="fields">An expression specifying the fields to use for matching and updating.</param>
+        /// <returns>The number of state entries affected in the underlying database.</returns>
         public static int BulkUpsert<T, T1>(this DbContext dbContext, ICollection<T> entities,
             Expression<Func<T, T1>> fields) where T : class
         {
             return AsyncHelpers.RunSync(() => BulkUpsertAsync(dbContext, entities, fields));
         }
 
+        /// <summary>
+        /// Asynchronously performs a bulk insert or update operation on the specified collection of entities in EF Core, using the specified fields for matching and updating.
+        /// </summary>
+        /// <typeparam name="T">The type of the entities.</typeparam>
+        /// <typeparam name="T1">The type of the fields expression result.</typeparam>
+        /// <param name="dbContext">The database context.</param>
+        /// <param name="entities">The collection of entities to upsert.</param>
+        /// <param name="fields">An expression specifying the fields to use for matching and updating.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the number of state entries affected in the underlying database.</returns>
         public static async Task<int> BulkUpsertAsync<T, T1>(this DbContext dbContext, ICollection<T> entities,
             Expression<Func<T, T1>> fields) where T : class
         {

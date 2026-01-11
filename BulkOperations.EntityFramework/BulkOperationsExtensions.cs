@@ -20,15 +20,28 @@ using System.Xml.Linq;
 
 namespace BulkOperations.EntityFramework
 {
+    /// <summary>
+    /// Extension methods for <see cref="DbContext"/> to perform bulk operations.
+    /// </summary>
     public static class BulkOperationsExtensions
     {
         private static ConcurrentDictionary<Type, EfMapping> _mappingCache = new ConcurrentDictionary<Type, EfMapping>();
 
+        /// <summary>
+        /// Saves all changes made in this context to the underlying database using high-performance bulk update.
+        /// </summary>
+        /// <param name="dbContext">The database context.</param>
+        /// <returns>The number of state entries written to the underlying database.</returns>
         public static int BulkSaveChanges(this DbContext dbContext)
         {
             return AsyncHelpers.RunSync(() => BulkSaveChangesAsync(dbContext));
         }
 
+        /// <summary>
+        /// Asynchronously saves all changes made in this context to the underlying database using high-performance bulk update.
+        /// </summary>
+        /// <param name="dbContext">The database context.</param>
+        /// <returns>A task that represents the asynchronous save operation. The task result contains the number of state entries written to the underlying database.</returns>
         public static async Task<int> BulkSaveChangesAsync(this DbContext dbContext)
         {
             var connection = dbContext.Database.Connection;
@@ -124,22 +137,54 @@ namespace BulkOperations.EntityFramework
             return result;
         }
 
+        /// <summary>
+        /// Performs a bulk insert or update operation on the specified collection of entities.
+        /// </summary>
+        /// <typeparam name="T">The type of the entities.</typeparam>
+        /// <param name="dbContext">The database context.</param>
+        /// <param name="entities">The collection of entities to upsert.</param>
+        /// <returns>The number of state entries affected in the underlying database.</returns>
         public static int BulkUpsert<T>(this DbContext dbContext, ICollection<T> entities) where T : class
         {
             return AsyncHelpers.RunSync(() => BulkUpsertAsync(dbContext, entities));
         }
 
+        /// <summary>
+        /// Asynchronously performs a bulk insert or update operation on the specified collection of entities.
+        /// </summary>
+        /// <typeparam name="T">The type of the entities.</typeparam>
+        /// <param name="dbContext">The database context.</param>
+        /// <param name="entities">The collection of entities to upsert.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the number of state entries affected in the underlying database.</returns>
         public static Task<int> BulkUpsertAsync<T>(this DbContext dbContext, ICollection<T> entities) where T : class
         {
             return BulkUpsertAsync<T, T>(dbContext, entities, null);
         }
 
+        /// <summary>
+        /// Performs a bulk insert or update operation on the specified collection of entities, using the specified fields for matching and updating.
+        /// </summary>
+        /// <typeparam name="T">The type of the entities.</typeparam>
+        /// <typeparam name="T1">The type of the fields expression result.</typeparam>
+        /// <param name="dbContext">The database context.</param>
+        /// <param name="entities">The collection of entities to upsert.</param>
+        /// <param name="fields">An expression specifying the fields to use for matching and updating.</param>
+        /// <returns>The number of state entries affected in the underlying database.</returns>
         public static int BulkUpsert<T, T1>(this DbContext dbContext, ICollection<T> entities,
             Expression<Func<T, T1>> fields) where T : class
         {
             return AsyncHelpers.RunSync(() => BulkUpsertAsync(dbContext, entities, fields));
         }
 
+        /// <summary>
+        /// Asynchronously performs a bulk insert or update operation on the specified collection of entities, using the specified fields for matching and updating.
+        /// </summary>
+        /// <typeparam name="T">The type of the entities.</typeparam>
+        /// <typeparam name="T1">The type of the fields expression result.</typeparam>
+        /// <param name="dbContext">The database context.</param>
+        /// <param name="entities">The collection of entities to upsert.</param>
+        /// <param name="fields">An expression specifying the fields to use for matching and updating.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the number of state entries affected in the underlying database.</returns>
         public static async Task<int> BulkUpsertAsync<T, T1>(this DbContext dbContext, ICollection<T> entities,
             Expression<Func<T, T1>> fields) where T : class
         {
@@ -327,17 +372,20 @@ namespace BulkOperations.EntityFramework
         }
     }
 
+    /// <summary>
+    /// Represents the mapping between Entity Framework types and database tables.
+    /// </summary>
     public class EfMapping
     {
         /// <summary>
-        /// Mapping information for each entity type in the model
+        /// Mapping information for each entity type in the model.
         /// </summary>
         public List<TypeMapping> TypeMappings { get; set; }
 
         /// <summary>
-        /// Initializes an instance of the EfMapping class
+        /// Initializes a new instance of the <see cref="EfMapping"/> class.
         /// </summary>
-        /// <param name="db">The context to get the mapping from</param>
+        /// <param name="db">The context to get the mapping from.</param>
         public EfMapping(DbContext db)
         {
             this.TypeMappings = new List<TypeMapping>();
@@ -450,51 +498,60 @@ namespace BulkOperations.EntityFramework
             return doc;
         }
     }
+    /// <summary>
+    /// Represents the mapping of an entity type to one or more tables.
+    /// </summary>
     public class TypeMapping
     {
         /// <summary>
-        /// The type of the entity from the model
+        /// The type of the entity from the model.
         /// </summary>
         public Type EntityType { get; set; }
 
         /// <summary>
-        /// The table(s) that the entity is mapped to
+        /// The table(s) that the entity is mapped to.
         /// </summary>
         public List<TableMapping> TableMappings { get; set; }
     }
 
     /// <summary>
-    /// Represents the mapping of an entity to a table in the database
+    /// Represents the mapping of an entity to a table in the database.
     /// </summary>
     public class TableMapping
     {
         /// <summary>
-        /// The name of the table the entity is mapped to
+        /// The name of the table the entity is mapped to.
         /// </summary>
         public string TableName { get; set; }
 
         /// <summary>
-        /// Details of the property-to-column mapping
+        /// Details of the property-to-column mapping as a dictionary.
         /// </summary>
         public Dictionary<string, PropertyInfo> PropertyMappings { get; set; }
 
+        /// <summary>
+        /// Details of the property-to-column mapping as a list.
+        /// </summary>
         public List<PropertyMapping> PropertyMappingsList { get; set; }
 
+        /// <summary>
+        /// The database schema name.
+        /// </summary>
         public string SchemaName { get; set; }
     }
 
     /// <summary>
-    /// Represents the mapping of a property to a column in the database
+    /// Represents the mapping of a property to a column in the database.
     /// </summary>
     public class PropertyMapping
     {
         /// <summary>
-        /// The property from the entity type
+        /// The property from the entity type.
         /// </summary>
         public PropertyInfo Property { get; set; }
 
         /// <summary>
-        /// The column that property is mapped to
+        /// The column that property is mapped to.
         /// </summary>
         public string ColumnName { get; set; }
     }
