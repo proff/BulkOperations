@@ -55,14 +55,19 @@ You can also specify a custom set of fields to use for matching and updating:
 context.BulkUpsert(entities, x => new { x.ExternalId, x.Name });
 ```
 
-### Async Operations
+## Why is it faster, or why do I have free resources in my system, but inserting by single line is slow?
 
-All methods have asynchronous counterparts for better scalability:
+In the I/O subsystem, completing a write operation does not necessarily guarantee that data has been physically written to the storage device. To ensure data integrity, write-through caching is employed.
 
-```csharp
-await context.BulkSaveChangesAsync();
-await context.BulkUpsertAsync(entities);
-```
+In transactional database systems, every statement executes within a transaction context. Whether transactions are explicitly defined or implicitly created, each statement is processed as an individual (sub)transaction, ensuring atomic execution — it either completes successfully or rolls back entirely.
+
+The data required for transaction rollback is recorded in the transaction log using write-through caching. The server will not continue the operation until writing is complete This mechanism prevents loss of commit information in scenarios where the server shuts down after data modifications have been persisted but before corresponding log entries have been fully written.
+
+So in single line solution one trnsaction (and writing-throgh caching with awaiting) per line, in bulk solution two transactions per batch.
+
+![performance test](perftest.png "performance test")
+
+
 
 ## Requirements
 
